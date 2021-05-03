@@ -34,6 +34,8 @@ namespace MapleRankingScalper.Models
 
                 entity.Property(e => e.pkCharacterId).HasColumnName("pkCharacterId");
 
+                entity.Property(e => e.RankGetRequestId);
+
                 entity.Property(e => e.Rank);
 
                 entity.Property(e => e.WorldName).HasMaxLength(30)

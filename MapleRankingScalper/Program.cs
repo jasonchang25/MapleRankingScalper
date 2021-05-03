@@ -2,9 +2,12 @@
 using MapleRankingScalper.Repository;
 using Newtonsoft.Json;
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace MapleRankingScalper
@@ -18,7 +21,7 @@ namespace MapleRankingScalper
         {
             Initialise();
             Console.WriteLine("Getting Character Information");
-            GetCharacterInformation().Wait();
+             GetCharacterInformation().Wait();
             Console.Write("Press any key to end");
             Console.ReadLine();
         }
@@ -32,14 +35,25 @@ namespace MapleRankingScalper
         private static async Task GetCharacterInformation()
         {
             var startingRank = 9395000;
-            var endingRank = 9400000;
-            //var endingRank = 33433670;
-            for (int i = startingRank; i <= endingRank; i = i + 5)
+            //var endingRank = 9400000;
+            var endingRank = 33433650;
+            var increment = 5;
+
+            IEnumerable<int> rankTasks = Enumerable.Range(0, (endingRank - startingRank) / increment + 1)
+                                                   .Select(i => startingRank + increment * i);
+
+            var options = new ParallelOptions()
             {
-                Console.WriteLine($"Getting Character Rank: {i}");
-                _logWriter.LogWrite($"Getting Character Rank: {i}");
-                GetCharacterByRanking(i);
-            }
+                MaxDegreeOfParallelism = 20
+            };
+
+            var result = Parallel.ForEach(rankTasks, options, i =>
+            {
+                Console.WriteLine($"[{Thread.CurrentThread.ManagedThreadId}] Getting Character Rank: {i}");
+                _logWriter.LogWrite($"[{Thread.CurrentThread.ManagedThreadId}] Getting Character Rank: {i}");
+                GetCharacterByRanking(i).Wait();
+            });
+
             Console.WriteLine($"Complete");
             _logWriter.LogWrite($"Complete");
         }
@@ -72,13 +86,17 @@ namespace MapleRankingScalper
 
                 if (characters.Count > 0)
                 {
-                    characters.ForEach(c => _characterRepository.AddCharacter(c));
+                    foreach (var character in characters)
+                    {
+                        character.RankGetRequestId = ranking;
+                        _characterRepository.AddCharacter(character);
+                    }
                 }
             }
             catch (Exception ex)
             {
                 _logWriter.LogWrite(ex.Message);
-            }            
+            }
         }
 
         /// <summary>

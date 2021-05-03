@@ -13,6 +13,7 @@ namespace MapleRankingScalper.Models
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int pkCharacterId { get; set; }
+        public int RankGetRequestId { get; set; }
         public int Rank { get; set; }
         public string WorldName { get; set; }
         public string JobName { get; set; }
